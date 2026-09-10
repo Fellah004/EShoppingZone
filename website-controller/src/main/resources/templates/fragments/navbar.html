@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+    <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container">
+            <!-- Brand Logo -->
+            <a class="navbar-brand brand-logo" th:href="${currentUser != null and currentUser.loggedIn and currentUser.admin ? '/admin/dashboard' : (currentUser != null and currentUser.loggedIn and currentUser.deliveryAgent ? '/delivery/dashboard' : (currentUser != null and currentUser.loggedIn and currentUser.merchant ? '/merchant/dashboard' : '/'))}">
+                <span class="brand-icon">E</span>
+                <span>EShopping</span>Zone
+                <span th:if="${currentUser != null and currentUser.loggedIn and currentUser.admin}" class="badge border ms-1 fw-bold text-uppercase" style="background-color: #fef2f2; color: #dc2626; font-size: 0.7rem;">Admin</span>
+                <span th:if="${currentUser != null and currentUser.loggedIn and currentUser.deliveryAgent}" class="badge border ms-1 fw-bold text-uppercase" style="background-color: #eff6ff; color: #2563eb; font-size: 0.7rem;">Delivery</span>
+                <span th:if="${currentUser != null and currentUser.loggedIn and currentUser.merchant}" class="badge border ms-1 fw-bold text-uppercase" style="background-color: var(--accent-light); color: var(--primary); font-size: 0.7rem;">Merchant</span>
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <!-- Search Bar (Only shown for Customers and Guests) -->
+                <th:block th:if="${currentUser == null or (!currentUser.merchant and !currentUser.deliveryAgent and !currentUser.admin)}">
+                    <div class="mx-auto my-2 my-lg-0 search-bar-container">
+                        <form th:action="@{/products/search}" method="get" class="d-flex search-input-group">
+                            <input class="form-control" type="search" name="query" placeholder="Search products, brands and categories..." aria-label="Search" th:value="${searchQuery}">
+                            <button class="btn btn-search" type="submit" aria-label="Submit search">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </th:block>
+                <th:block th:unless="${currentUser == null or (!currentUser.merchant and !currentUser.deliveryAgent and !currentUser.admin)}">
+                    <div class="mx-auto"></div>
+                </th:block>
+
+                <!-- Right Nav Links -->
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+                    <!-- Admin Specific Navigation -->
+                    <th:block th:if="${currentUser != null and currentUser.loggedIn and currentUser.admin}">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/admin/dashboard}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/admin/delivery-agents}">Delivery Agents</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/admin/assignments}">Assign Orders</a>
+                        </li>
+                        <!-- Notifications Link with Badge -->
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom d-flex align-items-center gap-1" th:href="@{/notifications}">
+                                <span>Notifications</span>
+                                <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" class="badge rounded-pill bg-danger" th:text="${unreadNotificationCount}">0</span>
+                            </a>
+                        </li>
+                        <!-- Admin Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle nav-link-custom d-flex align-items-center gap-1" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="fw-bold" th:text="${currentUser.fullName}">Admin</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/dashboard}">Admin Dashboard</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/customers}">111. Customers</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/merchants}">116. Merchants</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/delivery-agents}">121. Delivery Agents &amp; Zones</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/products}">128. Products Catalog</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/orders}">133. Order Management</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/deliveries}">140. Logistics &amp; Deliveries</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/payments}">146. Payments &amp; Financials</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/admin/reports}">152. Reports &amp; Analytics</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/profile}">My Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" th:href="@{/logout}">Sign Out</a></li>
+                            </ul>
+                        </li>
+                    </th:block>
+
+                    <!-- Delivery Agent Specific Navigation -->
+                    <th:block th:if="${currentUser != null and currentUser.loggedIn and currentUser.deliveryAgent}">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/delivery/dashboard}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/delivery/orders}">My Deliveries</a>
+                        </li>
+                        <!-- Notifications Link with Badge -->
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom d-flex align-items-center gap-1" th:href="@{/notifications}">
+                                <span>Notifications</span>
+                                <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" class="badge rounded-pill bg-danger" th:text="${unreadNotificationCount}">0</span>
+                            </a>
+                        </li>
+                        <!-- Delivery Agent Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle nav-link-custom d-flex align-items-center gap-1" href="#" id="deliveryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="fw-bold" th:text="${currentUser.fullName}">Agent</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="deliveryDropdown">
+                                <li><a class="dropdown-item py-2" th:href="@{/profile}">My Profile</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/delivery/profile}">Vehicle &amp; Documents</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/delivery/dashboard}">Delivery Dashboard</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/delivery/orders}">Assigned Orders</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/delivery/earnings}">Earnings &amp; Incentives</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/notifications}">Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" th:href="@{/logout}">Sign Out</a></li>
+                            </ul>
+                        </li>
+                    </th:block>
+
+                    <!-- Merchant Specific Navigation -->
+                    <th:block th:if="${currentUser != null and currentUser.loggedIn and currentUser.merchant}">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/merchant/dashboard}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/merchant/products}">Products</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/merchant/inventory}">Inventory</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/merchant/orders}">Orders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/merchant/returns}">Returns</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary-custom btn-sm" th:href="@{/merchant/products/add}">+ Add Product</a>
+                        </li>
+                        <!-- Notifications Link with Badge -->
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom d-flex align-items-center gap-1" th:href="@{/notifications}">
+                                <span>Notifications</span>
+                                <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" class="badge rounded-pill bg-danger" th:text="${unreadNotificationCount}">0</span>
+                            </a>
+                        </li>
+                        <!-- Merchant Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle nav-link-custom d-flex align-items-center gap-1" href="#" id="merchantDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="fw-bold" th:text="${currentUser.fullName}">Merchant</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="merchantDropdown">
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/profile}">Business Profile</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/dashboard}">Merchant Dashboard</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/products}">Product Catalog</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/inventory}">Inventory &amp; Stock</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/orders}">Orders Management</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/returns}">Customer Returns</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/merchant/sales}">Sales History</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/notifications}">Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" th:href="@{/logout}">Sign Out</a></li>
+                            </ul>
+                        </li>
+                    </th:block>
+
+                    <!-- Customer Specific Navigation -->
+                    <th:block th:if="${currentUser != null and currentUser.loggedIn and currentUser.customer}">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/products}">Products</a>
+                        </li>
+                        <!-- Wallet Quick Link -->
+                        <li class="nav-item">
+                            <a class="wallet-badge-pill" th:href="@{/wallet}">
+                                <span>Wallet</span>
+                            </a>
+                        </li>
+
+                        <!-- Cart Button -->
+                        <li class="nav-item">
+                            <a class="cart-btn" th:href="@{/cart}">
+                                <span>Cart</span>
+                                <span class="cart-badge" th:text="${cartCount != null ? cartCount : 0}">0</span>
+                            </a>
+                        </li>
+
+                        <!-- Notifications Link with Badge -->
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom d-flex align-items-center gap-1" th:href="@{/notifications}">
+                                <span>Notifications</span>
+                                <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" class="badge rounded-pill bg-danger" th:text="${unreadNotificationCount}">0</span>
+                            </a>
+                        </li>
+
+                        <!-- Customer Profile Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle nav-link-custom d-flex align-items-center gap-1" href="#" id="customerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="fw-bold" th:text="${currentUser.fullName}">Customer</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="customerDropdown">
+                                <li><a class="dropdown-item py-2" th:href="@{/profile}">My Profile</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/orders}">Order History</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/wallet}">Digital Wallet</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/wallet/transactions}">Statement History</a></li>
+                                <li><a class="dropdown-item py-2" th:href="@{/notifications}">Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" th:href="@{/logout}">Sign Out</a></li>
+                            </ul>
+                        </li>
+                    </th:block>
+
+                    <!-- Guest User Navigation -->
+                    <th:block th:unless="${currentUser != null and currentUser.loggedIn}">
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom" th:href="@{/products}">Products</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="cart-btn" th:href="@{/cart}">
+                                <span>Cart</span>
+                                <span class="cart-badge">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-custom btn-sm" th:href="@{/login}">Sign In</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary-custom btn-sm" th:href="@{/register}">Register</a>
+                        </li>
+                    </th:block>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</body>
+</html>

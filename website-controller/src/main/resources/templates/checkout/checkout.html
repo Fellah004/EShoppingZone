@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Shipping Address — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Breadcrumb & Step Tracker -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none text-muted">Home</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/cart}" class="text-decoration-none text-muted">Cart</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+            </ol>
+        </nav>
+
+        <!-- Progress Steps -->
+        <div class="d-flex justify-content-center mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="badge rounded-circle p-2" style="background-color: var(--primary); color: white; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">1</div>
+                <span class="fw-bold" style="color: var(--primary);">Delivery Address</span>
+                <span class="text-muted">&mdash;&mdash;&gt;</span>
+                <div class="badge bg-secondary rounded-circle p-2" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">2</div>
+                <span class="text-muted">Payment</span>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Shipping Address Form -->
+            <div class="col-lg-7">
+                <div class="surface-card shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h4 class="fw-bold mb-0">Delivery Address</h4>
+                        <a th:href="@{/profile/addresses}" class="btn btn-link btn-sm text-decoration-none" style="color: var(--primary);">+ Manage Addresses</a>
+                    </div>
+
+                    <!-- Saved Addresses Quick Pick -->
+                    <div th:if="${savedAddresses != null and not #lists.isEmpty(savedAddresses)}" class="mb-4">
+                        <label class="form-label small fw-bold text-secondary mb-2">Select from Saved Addresses:</label>
+                        <div class="row g-2 mb-3">
+                            <div th:each="addr : ${savedAddresses}" class="col-md-6">
+                                <div class="card p-2 border cursor-pointer h-100 saved-addr-card"
+                                     style="cursor: pointer;"
+                                     th:onclick="'fillAddress(' + ${#strings.escapeJavaScript(addr.fullName)} + ',' + ${#strings.escapeJavaScript(addr.mobileNumber)} + ',' + ${#strings.escapeJavaScript(addr.houseNumber)} + ',' + ${#strings.escapeJavaScript(addr.streetName)} + ',' + ${#strings.escapeJavaScript(addr.colonyName)} + ',' + ${#strings.escapeJavaScript(addr.city)} + ',' + ${#strings.escapeJavaScript(addr.state)} + ',' + ${#strings.escapeJavaScript(addr.pincode)} + ')'">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong class="small" th:text="${addr.fullName}">Contact Name</strong>
+                                        <span th:if="${addr.isDefault}" class="badge bg-primary" style="font-size: 0.65rem;">DEFAULT</span>
+                                    </div>
+                                    <p class="text-secondary mb-0" style="font-size: 0.75rem;" th:text="${addr.formattedAddress}">Address</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/checkout}" method="post">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label small fw-bold text-secondary">Recipient Full Name *</label>
+                                <input type="text" class="form-control" id="fullName" name="fullName" th:value="${shippingAddress.fullName != null ? shippingAddress.fullName : currentUser.fullName}" placeholder="Rahul Sharma" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mobileNumber" class="form-label small fw-bold text-secondary">Contact Mobile Number *</label>
+                                <input type="tel" class="form-control" id="mobileNumber" name="mobileNumber" th:value="${shippingAddress.mobileNumber != null ? shippingAddress.mobileNumber : ''}" placeholder="9876543210" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="houseNumber" class="form-label small fw-bold text-secondary">House / Flat No.</label>
+                                <input type="text" class="form-control" id="houseNumber" name="houseNumber" th:value="${shippingAddress.houseNumber}" placeholder="24">
+                            </div>
+                            <div class="col-md-8">
+                                <label for="streetName" class="form-label small fw-bold text-secondary">Street / Road *</label>
+                                <input type="text" class="form-control" id="streetName" name="streetName" th:value="${shippingAddress.streetName}" placeholder="MG Road" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="colonyName" class="form-label small fw-bold text-secondary">Area / Colony / Landmark</label>
+                                <input type="text" class="form-control" id="colonyName" name="colonyName" th:value="${shippingAddress.colonyName}" placeholder="Kakkanad">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="city" class="form-label small fw-bold text-secondary">City *</label>
+                                <input type="text" class="form-control" id="city" name="city" th:value="${shippingAddress.city}" placeholder="Kochi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="state" class="form-label small fw-bold text-secondary">State *</label>
+                                <input type="text" class="form-control" id="state" name="state" th:value="${shippingAddress.state}" placeholder="Kerala" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="pincode" class="form-label small fw-bold text-secondary">PIN Code *</label>
+                                <input type="text" class="form-control" id="pincode" name="pincode" th:value="${shippingAddress.pincode}" placeholder="682030" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{/cart}" class="btn btn-outline-custom">&larr; Return to Cart</a>
+                            <button type="submit" class="btn btn-primary-custom px-4 py-2">
+                                Continue to Payment &rarr;
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cart Summary Overview -->
+            <div class="col-lg-5">
+                <div class="surface-card shadow-sm">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">Order Items (<span th:text="${cart.totalItemCount}">0</span>)</h5>
+                    <div class="overflow-auto mb-3" style="max-height: 280px;">
+                        <div th:each="item : ${cart.items}" class="d-flex align-items-center gap-3 py-2 border-bottom">
+                            <img th:src="${item.imageUrl}" th:alt="${item.productName}" class="rounded" style="width: 45px; height: 45px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small" th:text="${item.productName}">Product</div>
+                                <div class="text-muted small">Qty: <span th:text="${item.quantity}">1</span> × ₹<span th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</span></div>
+                            </div>
+                            <div class="fw-bold small" style="color: var(--secondary);">
+                                ₹<span th:text="${#numbers.formatDecimal(item.subTotal, 1, 2)}">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-baseline pt-2">
+                        <span class="fw-bold h5 mb-0">Total Amount</span>
+                        <span class="fw-bold h4 mb-0" style="color: var(--secondary);">₹<span th:text="${#numbers.formatDecimal(cart.totalPrice, 1, 2)}">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function fillAddress(fullName, mobile, house, street, colony, city, state, pin) {
+            document.getElementById('fullName').value = fullName || '';
+            document.getElementById('mobileNumber').value = mobile || '';
+            document.getElementById('houseNumber').value = house || '';
+            document.getElementById('streetName').value = street || '';
+            document.getElementById('colonyName').value = colony || '';
+            document.getElementById('city').value = city || '';
+            document.getElementById('state').value = state || '';
+            document.getElementById('pincode').value = pin || '';
+        }
+    </script>
+</body>
+</html>

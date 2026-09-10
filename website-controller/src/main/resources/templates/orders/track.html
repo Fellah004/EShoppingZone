@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .track-timeline {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 2.5rem 0;
+        }
+        .track-timeline::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 5%;
+            right: 5%;
+            height: 4px;
+            background-color: var(--border-color, #e5e7eb);
+            z-index: 1;
+        }
+        .timeline-step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            flex: 1;
+        }
+        .step-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 3px solid var(--border-color, #e5e7eb);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #9ca3af;
+            transition: all 0.3s ease;
+        }
+        .timeline-step.completed .step-icon {
+            background-color: var(--primary, #c25e00);
+            border-color: var(--primary, #c25e00);
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(194, 94, 0, 0.15);
+        }
+        .timeline-step.current .step-icon {
+            background-color: #fff;
+            border-color: var(--primary, #c25e00);
+            color: var(--primary, #c25e00);
+            box-shadow: 0 0 0 5px rgba(194, 94, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+        .step-label {
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .timeline-step.completed .step-label,
+        .timeline-step.current .step-label {
+            color: var(--text-dark, #1f2937);
+            font-weight: 700;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(194, 94, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(194, 94, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(194, 94, 0, 0); }
+        }
+        @media (max-width: 768px) {
+            .track-timeline {
+                flex-direction: column;
+                gap: 1.5rem;
+                align-items: flex-start;
+                padding-left: 2rem;
+            }
+            .track-timeline::before {
+                top: 5%;
+                bottom: 5%;
+                left: 3.25rem;
+                width: 4px;
+                height: 90%;
+            }
+            .timeline-step {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            .step-label {
+                margin-top: 0;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="container py-4" th:if="${order != null}">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item">
+                    <a th:href="${currentUser != null and currentUser.admin ? '/admin/assignments' : (currentUser != null and currentUser.deliveryAgent ? '/delivery/orders' : (currentUser != null and currentUser.merchant ? '/merchant/sales' : '/orders'))}" class="text-decoration-none">
+                        <span th:text="${currentUser != null and currentUser.admin ? 'Assign Orders' : (currentUser != null and currentUser.deliveryAgent ? 'My Deliveries' : (currentUser != null and currentUser.merchant ? 'Sales Ledger' : 'Order History'))}">Orders</span>
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Track Order #<span th:text="${order.orderId}">1</span></li>
+            </ol>
+        </nav>
+
+        <!-- Tracking Header Card -->
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h1 class="h4 mb-0 fw-bold">Live Order Tracking</h1>
+                    <small class="text-muted">
+                        Order #<span th:text="${order.orderId}">1</span> &bull; Status: <span class="fw-semibold text-dark" th:text="${order.orderStatus}">STATUS</span>
+                    </small>
+                </div>
+                <div>
+                    <span class="badge px-3 py-2 fs-6 rounded-pill"
+                          th:classappend="${order.orderStatus == 'DELIVERED' ? 'bg-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : (order.orderStatus == 'ASSIGNED' ? 'bg-info text-dark' : (order.orderStatus == 'CANCELLED' ? 'bg-danger' : 'bg-warning text-dark')))}"
+                          th:text="${order.orderStatus}">STATUS</span>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Timeline -->
+                <div class="track-timeline">
+                    <!-- Step 1: Placed -->
+                    <div class="timeline-step" th:classappend="${order.orderStatus != 'CANCELLED' ? (order.orderStatus == 'PLACED' ? 'current' : 'completed') : ''}">
+                        <div class="step-icon">1</div>
+                        <div class="step-label">Order Placed</div>
+                    </div>
+
+                    <!-- Step 2: Confirmed -->
+                    <div class="timeline-step" th:classappend="${order.orderStatus == 'CONFIRMED' ? 'current' : ((order.orderStatus == 'ASSIGNED' or order.orderStatus == 'OUT_FOR_DELIVERY' or order.orderStatus == 'DELIVERED') ? 'completed' : '')}">
+                        <div class="step-icon">2</div>
+                        <div class="step-label">Confirmed</div>
+                    </div>
+
+                    <!-- Step 3: Assigned -->
+                    <div class="timeline-step" th:classappend="${order.orderStatus == 'ASSIGNED' ? 'current' : ((order.orderStatus == 'OUT_FOR_DELIVERY' or order.orderStatus == 'DELIVERED') ? 'completed' : '')}">
+                        <div class="step-icon">3</div>
+                        <div class="step-label">Agent Assigned</div>
+                    </div>
+
+                    <!-- Step 4: Out For Delivery -->
+                    <div class="timeline-step" th:classappend="${order.orderStatus == 'OUT_FOR_DELIVERY' ? 'current' : (order.orderStatus == 'DELIVERED' ? 'completed' : '')}">
+                        <div class="step-icon">4</div>
+                        <div class="step-label">Out for Delivery</div>
+                    </div>
+
+                    <!-- Step 5: Delivered -->
+                    <div class="timeline-step" th:classappend="${order.orderStatus == 'DELIVERED' ? 'completed' : ''}">
+                        <div class="step-icon">5</div>
+                        <div class="step-label">Delivered</div>
+                    </div>
+                </div>
+
+                <!-- Delivery OTP Banner for Customer -->
+                <div th:if="${order.orderStatus == 'OUT_FOR_DELIVERY' and order.deliveryOtp != null and (currentUser == null or !currentUser.deliveryAgent)}" class="alert alert-success border-0 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3" style="border-radius: 8px;">
+                    <div>
+                        <div class="fw-bold fs-6">&check; Delivery Verification OTP</div>
+                        <small class="text-muted">Share this 6-digit code with the delivery agent when receiving your package at your doorstep.</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-success text-white font-monospace fs-4 px-3 py-2" style="letter-spacing: 4px;" th:text="${order.deliveryOtp}">123456</span>
+                    </div>
+                </div>
+
+                <!-- Delivery Agent Info Callout -->
+                <div th:if="${order.deliveryAgentName != null and order.deliveryAgentName != 'Unassigned' and order.deliveryAgentName != ''}" class="alert alert-info border-0 d-flex align-items-center gap-3 mb-0" style="border-radius: 8px;">
+                    <div class="rounded-circle bg-white p-2 d-flex align-items-center justify-content-center text-primary" style="width: 40px; height: 40px;">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-4 0 1 1 0 0 1-1-1V3.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Assigned Delivery Agent: <span th:text="${order.deliveryAgentName}">Agent Name</span></div>
+                        <small class="text-muted">Your package is handled by a verified EShoppingZone delivery specialist.</small>
+                    </div>
+                </div>
+
+                <div th:unless="${order.deliveryAgentName != null and order.deliveryAgentName != 'Unassigned' and order.deliveryAgentName != ''}" class="alert alert-secondary border-0 d-flex align-items-center gap-3 mb-0" style="border-radius: 8px;">
+                    <div class="rounded-circle bg-white p-2 d-flex align-items-center justify-content-center text-muted" style="width: 40px; height: 40px;">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm.5 3.5a.5.5 0 0 0-1 0v4a.5.5 0 0 0 .246.429l3 1.732a.5.5 0 0 0 .5-.866L8.5 9.423V5.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Delivery Agent Assignment Pending</div>
+                        <small class="text-muted">An administrator is currently assigning a specialized delivery agent to dispatch your package.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Order Items -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h2 class="h5 mb-0 fw-bold">Package Contents (<span th:text="${order.items != null ? #lists.size(order.items) : 0}">0</span> items)</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Product</th>
+                                        <th>Price</th>
+                                        <th>Qty</th>
+                                        <th class="pe-4 text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="item : ${order.items}">
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img th:src="${item.imageUrl != null and item.imageUrl != '' ? item.imageUrl : '/images/placeholder.png'}" alt="Product" class="rounded border" style="width: 48px; height: 48px; object-fit: cover;">
+                                                <div>
+                                                    <div class="fw-bold" th:text="${item.productName}">Product Name</div>
+                                                    <small class="text-muted">Product #<span th:text="${item.productId}">1</span></small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>₹<span th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</span></td>
+                                        <td th:text="${item.quantity}">1</td>
+                                        <td class="pe-4 text-end fw-bold">₹<span th:text="${#numbers.formatDecimal(item.subTotal, 1, 2)}">0.00</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping & Payment Summary -->
+            <div class="col-lg-4">
+                <!-- Shipping Address Card -->
+                <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h2 class="h5 mb-0 fw-bold">Shipping Address</h2>
+                    </div>
+                    <div class="card-body" th:if="${order.shippingAddress != null}">
+                        <p class="fw-bold mb-1" th:text="${order.shippingAddress.fullName != null ? order.shippingAddress.fullName : 'Valued Customer'}">Full Name</p>
+                        <p class="text-muted mb-1" th:text="${order.shippingAddress.formattedAddress}">Formatted Address</p>
+                        <p class="text-muted mb-0" th:if="${order.shippingAddress.mobileNumber != null}">Phone: <span class="fw-semibold text-dark" th:text="${order.shippingAddress.mobileNumber}">0000000000</span></p>
+                    </div>
+                    <div class="card-body" th:unless="${order.shippingAddress != null}">
+                        <p class="text-muted mb-0">Standard Delivery Address on File</p>
+                    </div>
+                </div>
+
+                <!-- Payment Summary Card -->
+                <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h2 class="h5 mb-0 fw-bold">Payment Summary</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Payment Method</span>
+                            <span class="fw-bold" th:text="${order.paymentMethod}">WALLET</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Payment Status</span>
+                            <span class="badge" th:classappend="${order.paymentStatus == 'PAID' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${order.paymentStatus}">PAID</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fs-5 fw-bold">
+                            <span>Total Paid</span>
+                            <span style="color: var(--primary, #c25e00);">₹<span th:text="${#numbers.formatDecimal(order.orderAmount, 1, 2)}">0.00</span></span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                        <a th:href="${currentUser != null and currentUser.admin ? '/admin/assignments' : (currentUser != null and currentUser.deliveryAgent ? '/delivery/orders' : (currentUser != null and currentUser.merchant ? '/merchant/sales' : '/orders'))}" class="btn btn-outline-secondary w-100">
+                            Back
+                        </a>
+                        <a th:href="@{/orders/{id}/confirmation(id=${order.orderId})}" class="btn btn-outline-custom w-100">Invoice</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty/Error State -->
+    <div class="container py-5 text-center" th:unless="${order != null}">
+        <div class="surface-card p-5 mx-auto" style="max-width: 480px;">
+            <h4 class="fw-bold mb-2">Order Not Found</h4>
+            <p class="text-muted small mb-4">The requested order tracking details could not be retrieved.</p>
+            <a th:href="@{/}" class="btn btn-primary-custom">Return to Home</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

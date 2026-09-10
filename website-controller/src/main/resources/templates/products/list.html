@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Catalog — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Breadcrumb & Header -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="${currentUser != null and currentUser.loggedIn and currentUser.merchant ? '/merchant/dashboard' : '/'}" class="text-decoration-none text-muted">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    <span th:if="${selectedCategory != null}" th:text="${selectedCategory}">Category</span>
+                    <span th:if="${selectedType != null}" th:text="${selectedType}">Type</span>
+                    <span th:if="${selectedCategory == null and selectedType == null}">All Products</span>
+                </li>
+            </ol>
+        </nav>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <span th:if="${selectedCategory != null}" th:text="${selectedCategory}">Category</span>
+                    <span th:if="${selectedType != null}" th:text="${selectedType}">Type</span>
+                    <span th:if="${selectedCategory == null and selectedType == null}">Product Catalog</span>
+                </h2>
+                <p class="text-muted small mb-0" th:text="${pageData != null ? pageData.totalElements + ' items found' : (products != null ? products.size() + ' items found' : '0 items')}">0 items available</p>
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+                <a th:href="@{/products}" class="category-pill" th:classappend="${selectedCategory == null and selectedType == null and selectedManufacturer == null ? 'active' : ''}">All</a>
+                <a th:each="cat : ${categories}" th:href="@{/products(category=${cat},sortBy=${selectedSortBy})}" class="category-pill" th:classappend="${selectedCategory == cat ? 'active' : ''}" th:text="${cat}">Category</a>
+            </div>
+        </div>
+
+        <!-- Filter & Sort Bar -->
+        <div class="surface-card p-3 mb-4 shadow-sm">
+            <form th:action="@{/products}" method="get" class="row g-2 align-items-center">
+                <input th:if="${selectedCategory != null}" type="hidden" name="category" th:value="${selectedCategory}">
+                <input th:if="${selectedType != null}" type="hidden" name="type" th:value="${selectedType}">
+
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted mb-1">Filter by Brand</label>
+                    <select name="manufacturer" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">All Brands / Manufacturers</option>
+                        <option th:each="mfg : ${manufacturers}" th:value="${mfg}" th:text="${mfg}" th:selected="${selectedManufacturer == mfg}">Brand</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small text-muted mb-1">Min Price (₹)</label>
+                    <input type="number" name="minPrice" th:value="${selectedMinPrice}" class="form-control form-control-sm" placeholder="Min" min="0">
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small text-muted mb-1">Max Price (₹)</label>
+                    <input type="number" name="maxPrice" th:value="${selectedMaxPrice}" class="form-control form-control-sm" placeholder="Max" min="0">
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted mb-1">Sort Products</label>
+                    <select name="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="" th:selected="${selectedSortBy == null or selectedSortBy == ''}">Newest Arrivals</option>
+                        <option value="price_asc" th:selected="${selectedSortBy == 'price_asc'}">Price: Low to High</option>
+                        <option value="price_desc" th:selected="${selectedSortBy == 'price_desc'}">Price: High to Low</option>
+                        <option value="rating_desc" th:selected="${selectedSortBy == 'rating_desc'}">Customer Rating</option>
+                        <option value="name_asc" th:selected="${selectedSortBy == 'name_asc'}">Product Name: A to Z</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-12 d-flex gap-2 align-items-end pt-3">
+                    <button type="submit" class="btn btn-primary-custom btn-sm flex-grow-1">Apply</button>
+                    <a th:href="@{/products}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            <div class="col" th:each="product : ${products}">
+                <div class="product-card">
+                    <div class="product-img-wrapper position-relative">
+                        <img th:src="${product.image}" th:alt="${product.productName}">
+                        <!-- Availability Badge -->
+                        <span th:if="${product.inStock != null and product.inStock and (product.stockQuantity == null or product.stockQuantity > 0)}" class="badge bg-success position-absolute top-0 end-0 m-2" style="font-size: 0.75rem;">In Stock</span>
+                        <span th:if="${product.inStock == null or !product.inStock or (product.stockQuantity != null and product.stockQuantity <= 0)}" class="badge bg-danger position-absolute top-0 end-0 m-2" style="font-size: 0.75rem;">Out of Stock</span>
+                    </div>
+                    <div class="product-card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="product-category-tag" th:text="${product.category}">Category</span>
+                            <span class="badge bg-light text-secondary border small" th:text="${product.manufacturer}">Brand</span>
+                        </div>
+                        <h4 class="product-title">
+                            <a th:href="@{/products/{id}(id=${product.productId})}" th:text="${product.productName}">Product Name</a>
+                        </h4>
+                        <!-- Rating Display -->
+                        <div class="d-flex align-items-center gap-1 mb-2">
+                            <span class="text-warning small" th:if="${product.rating != null and product.rating > 0}">
+                                <span th:text="'★ ' + ${#numbers.formatDecimal(product.rating, 1, 1)}">★ 4.5</span>
+                            </span>
+                            <span class="text-muted small" th:if="${product.rating == null or product.rating == 0}">
+                                ★ No ratings yet
+                            </span>
+                        </div>
+                        <div class="product-price">
+                            <span class="currency">₹</span>
+                            <span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span>
+                        </div>
+                        <div class="product-actions">
+                            <a th:href="@{/products/{id}(id=${product.productId})}" class="btn btn-outline-custom btn-sm flex-grow-1">Details</a>
+                            <!-- Add to Cart for Customer/Guest -->
+                            <th:block th:unless="${currentUser != null and currentUser.loggedIn and currentUser.merchant}">
+                                <form th:action="@{/cart/add}" method="post" class="flex-grow-1">
+                                    <input type="hidden" name="productId" th:value="${product.productId}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary-custom btn-sm w-100" th:disabled="${product.inStock != null and !product.inStock}">
+                                        <span th:text="${product.inStock == null or product.inStock ? 'Add to Cart' : 'Sold Out'}">Add to Cart</span>
+                                    </button>
+                                </form>
+                            </th:block>
+                            <!-- Edit for Merchant -->
+                            <th:block th:if="${currentUser != null and currentUser.loggedIn and currentUser.merchant}">
+                                <a th:href="@{/merchant/products/edit/{id}(id=${product.productId})}" class="btn btn-outline-custom btn-sm flex-grow-1">Edit</a>
+                            </th:block>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="mt-4 surface-card p-0 overflow-hidden shadow-sm" th:if="${pageData != null and pageData.totalElements > 0}">
+            <div th:replace="~{fragments/pagination :: pagination(${pageData}, ${baseUrl})}"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${products == null or products.isEmpty()}" class="text-center py-5">
+            <div class="p-5 surface-card text-center">
+                <h4 class="text-muted">No products found in this category.</h4>
+                <a th:href="@{/products}" class="btn btn-primary-custom mt-3">Browse All Products</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

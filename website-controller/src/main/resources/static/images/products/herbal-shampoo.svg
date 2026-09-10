@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shampBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7"/>
+      <stop offset="100%" stop-color="#FDE68A"/>
+    </linearGradient>
+    <linearGradient id="bottleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="100%" stop-color="#451A03"/>
+    </linearGradient>
+    <filter id="shampShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#451A03" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#shampBg)"/>
+  <g filter="url(#shampShadow)">
+    <!-- Pump Dispenser -->
+    <rect x="192" y="55" width="16" height="35" fill="#1C1917"/>
+    <path d="M 175 55 L 225 55 L 235 70 L 165 70 Z" fill="#292524"/>
+    <rect x="180" y="90" width="40" height="15" fill="#451A03"/>
+    <!-- Bottle Body -->
+    <path d="M 180 105 L 220 105 C 255 125, 255 160, 255 310 C 255 330, 245 335, 230 335 L 170 335 C 155 335, 145 330, 145 310 C 145 160, 145 125, 180 105 Z" fill="url(#bottleGrad)"/>
+    <!-- Gold / Cream Label -->
+    <rect x="155" y="160" width="90" height="130" rx="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5"/>
+    <circle cx="200" cy="185" r="14" fill="#FEF3C7"/>
+    <text x="200" y="190" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="900" fill="#78350F" text-anchor="middle">AYUR</text>
+    <text x="200" y="215" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="800" fill="#451A03" text-anchor="middle">HERBAL</text>
+    <text x="200" y="230" font-family="'Plus Jakarta Sans', sans-serif" font-size="10" font-weight="700" fill="#92400E" text-anchor="middle">SHAMPOO</text>
+    <text x="200" y="250" font-family="'Plus Jakarta Sans', sans-serif" font-size="8" font-weight="600" fill="#78350F" text-anchor="middle">Amla &amp; Bhringraj</text>
+    <rect x="175" y="262" width="50" height="14" rx="7" fill="#78350F"/>
+    <text x="200" y="272" font-family="'Plus Jakarta Sans', sans-serif" font-size="7" font-weight="700" fill="#FFFBEB" text-anchor="middle">210 ML</text>
+  </g>
+  <rect x="30" y="30" width="85" height="24" rx="12" fill="#92400E"/>
+  <text x="72" y="46" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFDFC" text-anchor="middle">AYURVEDIC</text>
+</svg>

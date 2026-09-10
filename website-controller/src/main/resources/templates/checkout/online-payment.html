@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Payment Gateway — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+                <div class="surface-card shadow-sm p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="brand-logo justify-content-center mb-2">
+                            <span class="brand-icon">💳</span>
+                            <span>Secure</span>Gateway
+                        </div>
+                        <h4 class="fw-bold mb-1">Complete Online Payment</h4>
+                        <p class="text-muted small">256-bit SSL Encrypted Transaction</p>
+                    </div>
+
+                    <!-- Payment Summary Box -->
+                    <div class="p-3 bg-light rounded border mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Payable Amount:</span>
+                            <span class="fw-bold fs-5" style="color: var(--primary);">₹<span th:text="${#numbers.formatDecimal(cart.totalPrice, 1, 2)}">0.00</span></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Delivery Recipient:</span>
+                            <span class="small fw-semibold text-dark" th:text="${shippingAddress.fullName}">Rahul</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Mode Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="paymentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold small" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-tab-pane" type="button" role="tab">Debit / Credit Card</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold small" id="upi-tab" data-bs-toggle="tab" data-bs-target="#upi-tab-pane" type="button" role="tab">UPI / QR</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold small" id="netbanking-tab" data-bs-toggle="tab" data-bs-target="#netbanking-tab-pane" type="button" role="tab">Net Banking</button>
+                        </li>
+                    </ul>
+
+                    <form th:action="@{/checkout/process-online-payment}" method="post">
+                        <div class="tab-content" id="paymentTabContent">
+                            <!-- Card Payment Pane -->
+                            <div class="tab-pane fade show active" id="card-tab-pane" role="tabpanel">
+                                <input type="hidden" name="paymentGatewayMode" value="CARD">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary">Cardholder Name</label>
+                                    <input type="text" class="form-control" name="cardHolderName" th:value="${currentUser.fullName}" placeholder="Full Name on Card" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary">Card Number</label>
+                                    <input type="text" class="form-control font-monospace" placeholder="4532 •••• •••• 8890" maxlength="19" value="4532 8901 2345 6789" required>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-secondary">Expiry (MM/YY)</label>
+                                        <input type="text" class="form-control font-monospace" placeholder="12/28" maxlength="5" value="12/28" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-secondary">CVV</label>
+                                        <input type="password" class="form-control font-monospace" placeholder="•••" maxlength="4" value="888" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- UPI Pane -->
+                            <div class="tab-pane fade" id="upi-tab-pane" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary">Virtual Payment Address (UPI ID)</label>
+                                    <input type="text" class="form-control" placeholder="username@okhdfcbank">
+                                </div>
+                                <div class="text-center p-3 bg-light rounded border mb-2">
+                                    <p class="small text-muted mb-0">Or scan with Google Pay / PhonePe / Paytm / BHIM</p>
+                                </div>
+                            </div>
+
+                            <!-- Net Banking Pane -->
+                            <div class="tab-pane fade" id="netbanking-tab-pane" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-secondary">Select Bank</label>
+                                    <select class="form-select">
+                                        <option>HDFC Bank</option>
+                                        <option>State Bank of India</option>
+                                        <option>ICICI Bank</option>
+                                        <option>Axis Bank</option>
+                                        <option>Kotak Mahindra Bank</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-bold">
+                                Pay ₹<span th:text="${#numbers.formatDecimal(cart.totalPrice, 1, 2)}">0.00</span> Securely
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center small text-muted mt-3">
+                        <a th:href="@{/checkout/payment}" class="text-decoration-none text-muted">&larr; Return to Payment Selection</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

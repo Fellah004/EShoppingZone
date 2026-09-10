@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Agent Profile &amp; Vehicle — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <span class="badge border text-uppercase px-3 py-1 rounded-pill mb-2" style="background-color: #eff6ff; color: #2563eb;">Agent Credentials</span>
+                <h2 class="fw-bold mb-1">Profile, Vehicle &amp; Documents</h2>
+                <p class="text-muted small mb-0">Manage your delivery vehicle details, driving credentials, verification documents, and active duty availability.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/delivery/dashboard}" class="btn btn-outline-custom btn-sm">&larr; Dashboard</a>
+                <a th:href="@{/delivery/orders}" class="btn btn-outline-custom btn-sm">My Deliveries</a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Sidebar: Agent Identity & Duty Status -->
+            <div class="col-lg-4">
+                <!-- Duty Availability Card (Features 85, 86, 87) -->
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <h6 class="fw-bold mb-3 text-secondary text-uppercase small border-bottom pb-2">Duty Availability Status</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small text-muted">Current Status:</span>
+                        <span class="badge px-3 py-1 fs-6"
+                              th:classappend="${profile.availability == 'AVAILABLE' ? 'bg-success' : (profile.availability == 'BUSY' ? 'bg-warning text-dark' : 'bg-secondary')}"
+                              th:text="${profile.availability != null ? profile.availability : 'AVAILABLE'}">AVAILABLE</span>
+                    </div>
+
+                    <!-- 85, 86, 87. Availability Quick Switcher -->
+                    <form th:action="@{/delivery/availability}" method="post">
+                        <label class="form-label small fw-bold text-secondary">Change Duty Status</label>
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <input type="radio" class="btn-check" name="status" id="statusAvail" value="AVAILABLE" th:checked="${profile.availability == null or profile.availability == 'AVAILABLE'}" onchange="this.form.submit()">
+                            <label class="btn btn-outline-success btn-sm" for="statusAvail">Available</label>
+
+                            <input type="radio" class="btn-check" name="status" id="statusBusy" value="BUSY" th:checked="${profile.availability == 'BUSY'}" onchange="this.form.submit()">
+                            <label class="btn btn-outline-warning btn-sm" for="statusBusy">Busy</label>
+
+                            <input type="radio" class="btn-check" name="status" id="statusOffline" value="OFFLINE" th:checked="${profile.availability == 'OFFLINE'}" onchange="this.form.submit()">
+                            <label class="btn btn-outline-secondary btn-sm" for="statusOffline">Offline</label>
+                        </div>
+                    </form>
+                    <small class="text-muted" style="font-size: 0.75rem;">Administrators can assign new deliveries to you when set to <strong>AVAILABLE</strong>.</small>
+                </div>
+
+                <!-- Agent Profile Summary -->
+                <div class="surface-card p-4 shadow-sm text-center mb-4">
+                    <div class="mb-3 position-relative d-inline-block">
+                        <img th:if="${profile != null and profile.profileImage != null and !profile.profileImage.isEmpty()}"
+                             th:src="${profile.profileImage}"
+                             alt="Agent Photo"
+                             class="rounded-circle border p-1"
+                             style="width: 100px; height: 100px; object-fit: cover; background: #FAF8F6;">
+                        <div th:unless="${profile != null and profile.profileImage != null and !profile.profileImage.isEmpty()}"
+                             class="rounded-circle d-flex align-items-center justify-content-center mx-auto text-white fw-bold shadow-sm"
+                             style="width: 100px; height: 100px; background: linear-gradient(135deg, #2563eb, #60a5fa); font-size: 2.2rem;">
+                            <span th:text="${profile.fullName != null ? profile.fullName.substring(0,1).toUpperCase() : 'A'}">A</span>
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mb-1 text-dark" th:text="${profile.fullName}">Agent Name</h4>
+                    <span class="badge border px-3 py-1 rounded-pill mb-3" style="background-color: #eff6ff; color: #2563eb;">Certified Delivery Specialist</span>
+
+                    <hr class="my-3">
+
+                    <div class="text-start small">
+                        <div class="mb-2 d-flex justify-content-between">
+                            <span class="text-muted">Agent ID:</span>
+                            <strong class="text-dark font-monospace" th:text="'#' + ${profile.profileId}">#1</strong>
+                        </div>
+                        <div class="mb-2 d-flex justify-content-between">
+                            <span class="text-muted">Email:</span>
+                            <strong class="text-dark" th:text="${profile.email}">agent@example.com</strong>
+                        </div>
+                        <div class="mb-2 d-flex justify-content-between">
+                            <span class="text-muted">Phone:</span>
+                            <strong class="text-dark" th:text="${profile.mobileNumber}">9876543210</strong>
+                        </div>
+                        <div class="mb-0 d-flex justify-content-between">
+                            <span class="text-muted">Account Status:</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Profile & Vehicle Details Form -->
+            <div class="col-lg-8">
+                <!-- 83. Profile & Vehicle Details Form -->
+                <div class="surface-card p-4 p-md-5 shadow-sm mb-4">
+                    <h4 class="fw-bold mb-1">Personal &amp; Vehicle Information</h4>
+                    <p class="text-muted small mb-4">Keep your contact details and active transport vehicle information up-to-date.</p>
+
+                    <form th:action="@{/delivery/profile}" th:object="${updateRequest}" method="post">
+                        <!-- 1. Personal Info -->
+                        <h6 class="fw-bold text-uppercase text-secondary small mb-3 border-bottom pb-2">1. Personal Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label small fw-bold text-secondary">Full Name *</label>
+                                <input type="text" class="form-control" id="fullName" th:field="*{fullName}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mobileNumber" class="form-label small fw-bold text-secondary">Mobile / Phone Number *</label>
+                                <input type="tel" class="form-control" id="mobileNumber" th:field="*{mobileNumber}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gender" class="form-label small fw-bold text-secondary">Gender</label>
+                                <select class="form-select" id="gender" th:field="*{gender}">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="dateOfBirth" class="form-label small fw-bold text-secondary">Date of Birth</label>
+                                <input type="date" class="form-control" id="dateOfBirth" th:field="*{dateOfBirth}">
+                            </div>
+                            <div class="col-12">
+                                <label for="profileImage" class="form-label small fw-bold text-secondary">Profile Photo URL</label>
+                                <input type="url" class="form-control" id="profileImage" th:field="*{profileImage}" placeholder="https://example.com/photo.jpg">
+                            </div>
+                        </div>
+
+                        <!-- 83. Vehicle Details -->
+                        <h6 class="fw-bold text-uppercase text-secondary small mb-3 border-bottom pb-2">2. Vehicle Information</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="vehicleType" class="form-label small fw-bold text-secondary">Vehicle Type *</label>
+                                <select class="form-select" id="vehicleType" th:field="*{vehicleType}">
+                                    <option value="Motorcycle / Bike">Motorcycle / Bike</option>
+                                    <option value="Scooter">Scooter</option>
+                                    <option value="Electric Vehicle (EV)">Electric Vehicle (EV)</option>
+                                    <option value="Delivery Van">Delivery Van</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vehicleNumber" class="form-label small fw-bold text-secondary">Vehicle Number Plate *</label>
+                                <input type="text" class="form-control" id="vehicleNumber" th:field="*{vehicleNumber}" placeholder="e.g. KA-01-AB-1234">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vehicleModel" class="form-label small fw-bold text-secondary">Vehicle Model &amp; Make</label>
+                                <input type="text" class="form-control" id="vehicleModel" th:field="*{vehicleModel}" placeholder="e.g. Hero Splendor Plus / Honda Activa">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="drivingLicenseNumber" class="form-label small fw-bold text-secondary">Driving License Number</label>
+                                <input type="text" class="form-control" id="drivingLicenseNumber" th:field="*{drivingLicenseNumber}" placeholder="e.g. DL-0420110012345">
+                            </div>
+                        </div>
+
+                        <!-- 3. Base Address -->
+                        <h6 class="fw-bold text-uppercase text-secondary small mb-3 border-bottom pb-2">3. Base Residential Address</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="houseNumber" class="form-label small fw-bold text-secondary">House / Unit No.</label>
+                                <input type="text" class="form-control" id="houseNumber" th:field="*{address.houseNumber}" placeholder="8">
+                            </div>
+                            <div class="col-md-8">
+                                <label for="streetName" class="form-label small fw-bold text-secondary">Street / Road *</label>
+                                <input type="text" class="form-control" id="streetName" th:field="*{address.streetName}" placeholder="Logistics Road" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="city" class="form-label small fw-bold text-secondary">City *</label>
+                                <input type="text" class="form-control" id="city" th:field="*{address.city}" placeholder="Bengaluru" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="state" class="form-label small fw-bold text-secondary">State *</label>
+                                <input type="text" class="form-control" id="state" th:field="*{address.state}" placeholder="Karnataka" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="pincode" class="form-label small fw-bold text-secondary">PIN Code *</label>
+                                <input type="text" class="form-control" id="pincode" th:field="*{address.pincode}" placeholder="560034" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a th:href="@{/delivery/dashboard}" class="btn btn-outline-custom">Cancel</a>
+                            <button type="submit" class="btn btn-primary-custom px-4 py-2 fw-bold">
+                                Save Profile &amp; Vehicle Details
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 84. Document Uploads Section -->
+                <div class="surface-card p-4 p-md-5 shadow-sm">
+                    <h4 class="fw-bold mb-1">84. Verification Documents</h4>
+                    <p class="text-muted small mb-4">Provide direct URLs or references to your official driving license, vehicle registration (RC), and identity proof.</p>
+
+                    <form th:action="@{/delivery/documents}" method="post">
+                        <!-- Driving License Document -->
+                        <div class="mb-3">
+                            <label for="drivingLicenseUrl" class="form-label small fw-bold text-secondary">Driving License Document URL</label>
+                            <div class="input-group input-group-sm">
+                                <input type="url" class="form-control" id="drivingLicenseUrl" name="drivingLicenseUrl" th:value="${profile.drivingLicenseUrl}" placeholder="https://example.com/docs/license.pdf">
+                                <a th:if="${profile.drivingLicenseUrl != null and !profile.drivingLicenseUrl.isEmpty()}" th:href="${profile.drivingLicenseUrl}" target="_blank" class="btn btn-outline-secondary">View &rarr;</a>
+                            </div>
+                        </div>
+
+                        <!-- Vehicle Registration Document -->
+                        <div class="mb-3">
+                            <label for="vehicleRegistrationUrl" class="form-label small fw-bold text-secondary">Vehicle Registration (RC) Document URL</label>
+                            <div class="input-group input-group-sm">
+                                <input type="url" class="form-control" id="vehicleRegistrationUrl" name="vehicleRegistrationUrl" th:value="${profile.vehicleRegistrationUrl}" placeholder="https://example.com/docs/rc.pdf">
+                                <a th:if="${profile.vehicleRegistrationUrl != null and !profile.vehicleRegistrationUrl.isEmpty()}" th:href="${profile.vehicleRegistrationUrl}" target="_blank" class="btn btn-outline-secondary">View &rarr;</a>
+                            </div>
+                        </div>
+
+                        <!-- Identity Document -->
+                        <div class="mb-4">
+                            <label for="identityDocumentUrl" class="form-label small fw-bold text-secondary">National ID / Passport Document URL</label>
+                            <div class="input-group input-group-sm">
+                                <input type="url" class="form-control" id="identityDocumentUrl" name="identityDocumentUrl" th:value="${profile.identityDocumentUrl}" placeholder="https://example.com/docs/id.pdf">
+                                <a th:if="${profile.identityDocumentUrl != null and !profile.identityDocumentUrl.isEmpty()}" th:href="${profile.identityDocumentUrl}" target="_blank" class="btn btn-outline-secondary">View &rarr;</a>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end pt-3 border-top">
+                            <button type="submit" class="btn btn-outline-custom px-4 py-2 fw-bold">
+                                Update Documents
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

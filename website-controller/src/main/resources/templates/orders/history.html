@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none text-muted">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Order History</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h2 class="fw-bold mb-1">My Orders</h2>
+                <p class="text-muted small mb-0">Track and manage your current and previous orders</p>
+            </div>
+            <a th:href="@{/products}" class="btn btn-outline-custom btn-sm">Explore Products</a>
+        </div>
+
+        <!-- Orders View Tabs -->
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 me-2" th:classappend="${currentView == null or currentView == 'all' ? 'active' : 'bg-light text-dark'}" th:href="@{/orders}">All Orders</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3" th:classappend="${currentView == 'current' ? 'active' : 'bg-light text-dark'}" th:href="@{/orders(view='current')}">Current Orders (Active)</a>
+            </li>
+        </ul>
+
+        <!-- Orders List -->
+        <div th:if="${orders != null and !orders.isEmpty()}" class="d-flex flex-column gap-3">
+            <div th:each="order : ${orders}" class="surface-card p-4 shadow-sm">
+                <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom mb-3 gap-2">
+                    <div>
+                        <span class="text-muted small d-block">Order Date</span>
+                        <span class="fw-semibold small" th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">Jan 01, 2026</span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Order ID</span>
+                        <span class="fw-bold" style="color: var(--primary);">#<span th:text="${order.orderId}">1001</span></span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Amount</span>
+                        <span class="fw-bold text-dark">₹<span th:text="${#numbers.formatDecimal(order.orderAmount, 1, 2)}">0.00</span></span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Payment Mode</span>
+                        <span class="badge bg-light text-dark border small" th:text="${order.paymentMethod}">WALLET</span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Payment Status</span>
+                        <span th:if="${order.paymentStatus == 'PAID'}" class="badge bg-success text-uppercase" style="font-size: 0.72rem;">PAID</span>
+                        <span th:if="${order.paymentStatus == 'PENDING'}" class="badge bg-warning text-dark text-uppercase" style="font-size: 0.72rem;">PENDING</span>
+                        <span th:if="${order.paymentStatus != 'PAID' and order.paymentStatus != 'PENDING'}" class="badge bg-secondary text-uppercase" style="font-size: 0.72rem;" th:text="${order.paymentStatus}">STATUS</span>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Order Status</span>
+                        <span class="badge badge-status badge-placed" th:text="${order.orderStatus}">PLACED</span>
+                        <span th:if="${order.refundStatus == 'REQUESTED'}" class="badge bg-info text-dark ms-1 small">Refund Requested</span>
+                        <span th:if="${order.refundStatus == 'REFUNDED'}" class="badge bg-success ms-1 small">Refunded</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/orders/{id}/track(id=${order.orderId})}" class="btn btn-primary-custom btn-sm">
+                            Track
+                        </a>
+                        <a th:href="@{/orders/{id}/invoice(id=${order.orderId})}" class="btn btn-outline-custom btn-sm" target="_blank">
+                            Invoice
+                        </a>
+                        <!-- Cancel Order Button if eligible -->
+                        <form th:if="${order.orderStatus == 'PLACED' or order.orderStatus == 'PROCESSING' or order.orderStatus == 'ASSIGNED'}"
+                              th:action="@{/orders/{id}/cancel(id=${order.orderId})}" method="post"
+                              onsubmit="return confirm('Are you sure you want to cancel this order? If paid with wallet, the amount will be immediately refunded.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                        </form>
+                        <!-- Request Refund Button if eligible -->
+                        <button th:if="${(order.orderStatus == 'DELIVERED' or order.orderStatus == 'CANCELLED') and (order.refundStatus == null or order.refundStatus == 'NONE')}"
+                                type="button" class="btn btn-sm btn-outline-warning text-dark"
+                                data-bs-toggle="modal" th:data-bs-target="'#refundModal' + ${order.orderId}">
+                            Refund
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Refund Modal -->
+                <div th:if="${(order.orderStatus == 'DELIVERED' or order.orderStatus == 'CANCELLED') and (order.refundStatus == null or order.refundStatus == 'NONE')}"
+                     class="modal fade" th:id="'refundModal' + ${order.orderId}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content surface-card">
+                            <div class="modal-header border-bottom">
+                                <h5 class="modal-title fw-bold">Request Refund for Order #<span th:text="${order.orderId}">1001</span></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form th:action="@{/orders/{id}/refund(id=${order.orderId})}" method="post">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-secondary">Reason for Refund *</label>
+                                        <select name="reason" class="form-select" required>
+                                            <option value="DAMAGED_ITEM">Damaged or defective item received</option>
+                                            <option value="WRONG_ITEM">Wrong item delivered</option>
+                                            <option value="NOT_SATISFIED">Product does not match description</option>
+                                            <option value="CANCELLED_ORDER">Cancelled order refund request</option>
+                                            <option value="OTHER">Other Reason</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-warning btn-sm">Submit Refund Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items Preview -->
+                <div class="row row-cols-1 row-cols-md-2 g-2">
+                    <div class="col" th:each="item : ${order.items}">
+                        <div class="d-flex align-items-center gap-2 p-2 bg-light rounded">
+                            <img th:src="${item.imageUrl}" th:alt="${item.productName}" class="rounded" style="width: 36px; height: 36px; object-fit: cover;">
+                            <div class="flex-grow-1 text-truncate">
+                                <span class="small fw-semibold text-truncate d-block" th:text="${item.productName}">Product</span>
+                                <span class="text-muted small">Qty: <span th:text="${item.quantity}">1</span> &bull; ₹<span th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="mt-3 surface-card p-0 overflow-hidden shadow-sm" th:if="${pageData != null and pageData.totalElements > 0}">
+            <div th:replace="~{fragments/pagination :: pagination(${pageData}, ${baseUrl})}"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:unless="${orders != null and !orders.isEmpty()}" class="text-center py-5">
+            <div class="surface-card p-5 mx-auto" style="max-width: 480px;">
+                <h4 class="fw-bold mb-2">No Orders Found</h4>
+                <p class="text-muted small mb-4">You have not placed any orders yet.</p>
+                <a th:href="@{/products}" class="btn btn-primary-custom">Explore Products</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

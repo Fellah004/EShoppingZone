@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Products — Merchant Workspace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <span class="badge border text-uppercase px-3 py-1 rounded-pill mb-2" style="background-color: var(--accent-light); color: var(--primary);">Product Catalog</span>
+                <h2 class="fw-bold mb-1">My Products Catalog</h2>
+                <p class="text-muted small mb-0">Manage catalog listings, toggle product visibility, edit variants, prices, and stock.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/merchant/dashboard}" class="btn btn-outline-custom btn-sm">Dashboard</a>
+                <a th:href="@{/merchant/inventory}" class="btn btn-outline-custom btn-sm">Stock &amp; Inventory</a>
+                <a th:href="@{/merchant/products/add}" class="btn btn-primary-custom btn-sm">+ Add New Product</a>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div class="btn-group btn-group-sm" role="group">
+                <a th:href="@{/merchant/products}" class="btn btn-outline-secondary" th:classappend="${statusFilter == null ? 'active' : ''}">All Products</a>
+                <a th:href="@{/merchant/products(status='active')}" class="btn btn-outline-secondary" th:classappend="${statusFilter == 'active' ? 'active' : ''}">Active Only</a>
+                <a th:href="@{/merchant/products(status='inactive')}" class="btn btn-outline-secondary" th:classappend="${statusFilter == 'inactive' ? 'active' : ''}">Deactivated</a>
+            </div>
+            <span class="badge bg-secondary rounded-pill" th:text="${pageData != null ? pageData.totalElements + ' Products' : (products.size() + ' Products')}">0 Products</span>
+        </div>
+
+        <!-- Product Table Card -->
+        <div class="surface-card p-0 overflow-hidden shadow-sm">
+            <!-- Empty State -->
+            <div th:if="${#lists.isEmpty(products)}" class="text-center py-5">
+                <div class="p-3 rounded-circle d-inline-flex mb-3" style="background-color: var(--accent-light); color: var(--primary);">
+                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.761V6.838L1 4.239v7.923l6.5 2.6z"/>
+                    </svg>
+                </div>
+                <h5 class="fw-bold text-dark">No Products In Catalog</h5>
+                <p class="text-muted small mb-3">You haven't listed any products yet under your merchant profile.</p>
+                <a th:href="@{/merchant/products/add}" class="btn btn-primary-custom btn-sm">+ Add Your First Product</a>
+            </div>
+
+            <!-- Product Table -->
+            <div th:if="${not #lists.isEmpty(products)}" class="table-responsive">
+                <table class="table table-custom mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 6%;">ID</th>
+                            <th style="width: 32%;">Product Details</th>
+                            <th style="width: 14%;">Category &amp; Type</th>
+                            <th style="width: 12%;">Stock Status</th>
+                            <th style="width: 14%;">Price &amp; Discount</th>
+                            <th style="width: 10%;">Visibility</th>
+                            <th style="width: 12%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="product : ${products}">
+                            <td class="fw-semibold text-muted font-monospace" th:text="'#' + ${product.productId}">#1</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img th:src="${product.image}" th:alt="${product.productName}" class="rounded border p-1" style="width: 46px; height: 46px; object-fit: contain; background: #FAF8F6;">
+                                    <div>
+                                        <span class="fw-bold d-block text-dark small" th:text="${product.productName}">Product Name</span>
+                                        <span class="text-muted small" th:text="'Brand: ' + ${product.manufacturer}">Brand</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge border d-inline-block mb-1" style="background-color: var(--accent-light); color: var(--primary);" th:text="${product.category}">Category</span>
+                                <span class="d-block small text-muted" th:text="${product.productType}">Type</span>
+                            </td>
+                            <td>
+                                <span th:if="${product.stockQuantity == null or product.stockQuantity <= 0}" class="badge bg-danger">Out of Stock</span>
+                                <span th:if="${product.stockQuantity != null and product.stockQuantity > 0 and product.isLowStock()}" class="badge bg-warning text-dark" th:text="'Low (' + ${product.stockQuantity} + ' left)'">Low Stock</span>
+                                <span th:if="${product.stockQuantity != null and product.stockQuantity > 0 and !product.isLowStock()}" class="badge bg-success-subtle text-success border border-success-subtle" th:text="${product.stockQuantity} + ' in stock'">In Stock</span>
+                            </td>
+                            <td>
+                                <div th:if="${product.discountPercent != null and product.discountPercent > 0}">
+                                    <span class="fw-bold small text-success">₹<span th:text="${#numbers.formatDecimal(product.getEffectivePrice(), 1, 2)}">0.00</span></span>
+                                    <span class="text-muted text-decoration-line-through small ms-1">₹<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span></span>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-block mt-1" style="width: fit-content;" th:text="'-' + ${product.discountPercent} + '% OFF'">10% OFF</span>
+                                </div>
+                                <div th:unless="${product.discountPercent != null and product.discountPercent > 0}">
+                                    <span class="fw-bold small text-dark">₹<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span></span>
+                                </div>
+                            </td>
+                            <td>
+                                <form th:action="@{/merchant/products/{id}/toggle-active(id=${product.productId})}" method="post">
+                                    <input type="hidden" name="redirect" value="/merchant/products">
+                                    <button type="submit" class="btn btn-sm py-1 px-2 border" th:classappend="${product.active == null or product.active ? 'btn-outline-success' : 'btn-outline-secondary'}" th:title="${product.active == null or product.active ? 'Click to deactivate' : 'Click to activate'}">
+                                        <span th:if="${product.active == null or product.active}">Active (Live)</span>
+                                        <span th:unless="${product.active == null or product.active}">Inactive</span>
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1">
+                                    <a th:href="@{/merchant/products/edit/{id}(id=${product.productId})}" class="btn btn-outline-custom btn-sm py-1 px-2" title="Edit Product">Edit</a>
+                                    <form th:action="@{/merchant/products/delete/{id}(id=${product.productId})}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this product?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete Product">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Fragment -->
+            <div th:replace="~{fragments/pagination :: pagination(${pageData}, ${baseUrl})}"></div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

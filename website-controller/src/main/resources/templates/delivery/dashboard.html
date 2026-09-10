@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Agent Dashboard — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Dashboard Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge border text-uppercase px-3 py-1 rounded-pill" style="background-color: #eff6ff; color: #2563eb;">Field Operations</span>
+                    <!-- Availability Pill (Features 85, 86, 87) -->
+                    <span class="badge px-3 py-1 rounded-pill"
+                          th:if="${profile != null}"
+                          th:classappend="${profile.availability == 'AVAILABLE' ? 'bg-success' : (profile.availability == 'BUSY' ? 'bg-warning text-dark' : 'bg-secondary')}"
+                          th:text="'Duty: ' + (${profile.availability != null ? profile.availability : 'AVAILABLE'})">Duty: AVAILABLE</span>
+                </div>
+                <h2 class="fw-bold mb-1">Welcome back, <span th:text="${currentUser.fullName}">Agent</span>!</h2>
+                <p class="text-muted small mb-0">Track, accept and fulfill your assigned delivery dispatches.</p>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-md-0">
+                <!-- Duty Toggle Dropdown -->
+                <div class="dropdown" th:if="${profile != null}">
+                    <button class="btn btn-sm dropdown-toggle fw-bold"
+                            th:classappend="${profile.availability == 'AVAILABLE' ? 'btn-success' : (profile.availability == 'BUSY' ? 'btn-warning' : 'btn-secondary')}"
+                            type="button" id="dutyDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span th:text="${profile.availability != null ? profile.availability : 'AVAILABLE'}">AVAILABLE</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dutyDropdown">
+                        <li>
+                            <form th:action="@{/delivery/availability}" method="post">
+                                <input type="hidden" name="status" value="AVAILABLE">
+                                <button type="submit" class="dropdown-item text-success fw-semibold">&bull; Set AVAILABLE</button>
+                            </form>
+                        </li>
+                        <li>
+                            <form th:action="@{/delivery/availability}" method="post">
+                                <input type="hidden" name="status" value="BUSY">
+                                <button type="submit" class="dropdown-item text-warning fw-semibold">&bull; Set BUSY</button>
+                            </form>
+                        </li>
+                        <li>
+                            <form th:action="@{/delivery/availability}" method="post">
+                                <input type="hidden" name="status" value="OFFLINE">
+                                <button type="submit" class="dropdown-item text-secondary fw-semibold">&bull; Set OFFLINE</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                <a th:href="@{/delivery/profile}" class="btn btn-outline-custom btn-sm">Vehicle &amp; Profile</a>
+                <a th:href="@{/delivery/orders}" class="btn btn-primary-custom btn-sm">View Deliveries</a>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
+            <!-- Ready for Pickup / Assigned -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-info">
+                    <span class="text-muted small d-block">Ready to Start (Assigned)</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${assignedCount}">0</h3>
+                    <a th:href="@{/delivery/orders?status=ASSIGNED}" class="small text-decoration-none fw-semibold">View Assigned &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Out for Delivery -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-primary">
+                    <span class="text-muted small d-block">Out for Delivery</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${outForDeliveryCount}">0</h3>
+                    <a th:href="@{/delivery/orders?status=OUT_FOR_DELIVERY}" class="small text-decoration-none fw-semibold">In Transit &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Delivered -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-success">
+                    <span class="text-muted small d-block">Successfully Delivered</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${deliveredCount}">0</h3>
+                    <span class="text-muted small">Completed dispatches</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Deliveries Table -->
+        <div class="surface-card p-0 overflow-hidden shadow-sm">
+            <div class="p-3 d-flex justify-content-between align-items-center border-bottom bg-light">
+                <h5 class="fw-bold mb-0">Recent Assigned Deliveries</h5>
+                <a th:href="@{/delivery/orders}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+
+            <div th:if="${#lists.isEmpty(recentOrders)}" class="text-center py-5">
+                <h5 class="fw-bold text-dark">No Deliveries Assigned Yet</h5>
+                <p class="text-muted small">You will see orders here as soon as an administrator assigns them to you.</p>
+            </div>
+
+            <div th:if="${not #lists.isEmpty(recentOrders)}" class="table-responsive">
+                <table class="table table-custom mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer &amp; Address</th>
+                            <th>Payment Mode</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="order : ${recentOrders}">
+                            <td><span class="fw-bold font-monospace" th:text="'#' + ${order.orderId}">#1001</span></td>
+                            <td><span class="text-muted small" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : 'Recently'}">Date</span></td>
+                            <td>
+                                <div th:if="${order.shippingAddress != null}">
+                                    <span class="fw-semibold small d-block" th:text="${order.shippingAddress.fullName != null ? order.shippingAddress.fullName : 'Customer'}">Customer</span>
+                                    <span class="text-muted small" th:text="${order.shippingAddress.formattedAddress}">Address</span>
+                                </div>
+                                <div th:unless="${order.shippingAddress != null}">
+                                    <span class="text-muted small">Standard Delivery</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="${order.paymentMethod == 'COD' ? 'bg-warning text-dark' : 'bg-light text-dark border'}" th:text="${order.paymentMethod}">WALLET</span>
+                                <span th:if="${order.paymentStatus == 'PAID'}" class="badge bg-success" style="font-size: 0.65rem;">PAID</span>
+                                <span th:if="${order.paymentStatus == 'PENDING'}" class="badge bg-danger" style="font-size: 0.65rem;">COD PENDING</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${order.orderStatus == 'DELIVERED' ? 'bg-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : 'bg-info text-dark')}"
+                                      th:text="${order.orderStatus}">ASSIGNED</span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/delivery/orders/{id}(id=${order.orderId})}" class="btn btn-primary-custom btn-sm">Process Delivery</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

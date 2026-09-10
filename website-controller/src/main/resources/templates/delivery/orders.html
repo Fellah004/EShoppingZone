@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Assigned Deliveries — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/delivery/dashboard}" class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Assigned Deliveries</li>
+                    </ol>
+                </nav>
+                <h2 class="fw-bold mb-1">My Assigned Deliveries</h2>
+                <p class="text-muted small mb-0">View and fulfill delivery assignments in your route.</p>
+            </div>
+            <!-- Filter Tabs -->
+            <div class="btn-group" role="group">
+                <a th:href="@{/delivery/orders(status='ALL')}" class="btn btn-sm"
+                   th:classappend="${currentFilter == 'ALL' ? 'btn-primary-custom' : 'btn-outline-custom'}">All</a>
+                <a th:href="@{/delivery/orders(status='ASSIGNED')}" class="btn btn-sm"
+                   th:classappend="${currentFilter == 'ASSIGNED' ? 'btn-primary-custom' : 'btn-outline-custom'}">Assigned</a>
+                <a th:href="@{/delivery/orders(status='OUT_FOR_DELIVERY')}" class="btn btn-sm"
+                   th:classappend="${currentFilter == 'OUT_FOR_DELIVERY' ? 'btn-primary-custom' : 'btn-outline-custom'}">Out for Delivery</a>
+                <a th:href="@{/delivery/orders(status='DELIVERED')}" class="btn btn-sm"
+                   th:classappend="${currentFilter == 'DELIVERED' ? 'btn-primary-custom' : 'btn-outline-custom'}">Delivered</a>
+            </div>
+        </div>
+
+        <!-- Orders Table Card -->
+        <div class="surface-card p-0 overflow-hidden shadow-sm">
+            <div class="p-3 d-flex justify-content-between align-items-center border-bottom bg-light">
+                <h5 class="fw-bold mb-0">Assigned Orders (<span th:text="${pageData != null ? pageData.totalElements : #lists.size(orders)}">0</span>)</h5>
+            </div>
+
+            <div th:if="${#lists.isEmpty(orders)}" class="text-center py-5">
+                <h5 class="fw-bold text-dark">No Deliveries in this Status</h5>
+                <p class="text-muted small">No orders currently match the selected filter.</p>
+                <a th:href="@{/delivery/orders}" class="btn btn-outline-custom btn-sm">Clear Filter</a>
+            </div>
+
+            <div th:if="${not #lists.isEmpty(orders)}" class="table-responsive">
+                <table class="table table-custom mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer &amp; Address</th>
+                            <th>Items</th>
+                            <th>Amount &amp; Payment</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="order : ${orders}">
+                            <td><span class="fw-bold font-monospace" th:text="'#' + ${order.orderId}">#1001</span></td>
+                            <td><span class="text-muted small" th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'dd MMM yyyy, HH:mm') : 'Recently'}">Date</span></td>
+                            <td>
+                                <div th:if="${order.shippingAddress != null}">
+                                    <strong class="small d-block" th:text="${order.shippingAddress.fullName != null ? order.shippingAddress.fullName : 'Customer'}">Customer</strong>
+                                    <span class="text-muted small d-block" th:text="${order.shippingAddress.formattedAddress}">Address</span>
+                                    <span class="text-muted small" th:if="${order.shippingAddress.mobileNumber != null}">Phone: <strong th:text="${order.shippingAddress.mobileNumber}">0000000000</strong></span>
+                                </div>
+                                <div th:unless="${order.shippingAddress != null}">
+                                    <span class="text-muted small">Standard Delivery</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${order.items != null ? #lists.size(order.items) + ' item(s)' : '0 items'}">1 item</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark d-block">₹<span th:text="${order.orderAmount != null ? #numbers.formatDecimal(order.orderAmount, 1, 2) : '0.00'}">0.00</span></span>
+                                <span class="badge" th:classappend="${order.paymentMethod == 'COD' ? 'bg-warning text-dark' : 'bg-light text-dark border'}" th:text="${order.paymentMethod}">WALLET</span>
+                                <span th:if="${order.paymentStatus == 'PAID'}" class="badge bg-success" style="font-size: 0.65rem;">PAID</span>
+                                <span th:if="${order.paymentStatus == 'PENDING'}" class="badge bg-danger" style="font-size: 0.65rem;">COD PENDING</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${order.orderStatus == 'DELIVERED' ? 'bg-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : 'bg-info text-dark')}"
+                                      th:text="${order.orderStatus}">ASSIGNED</span>
+                                <div th:if="${order.assignmentStatus == 'ACCEPTED'}" class="text-success small fw-semibold" style="font-size: 0.72rem;">&check; Accepted</div>
+                                <div th:if="${order.pickupStatus == 'CONFIRMED'}" class="text-primary small fw-semibold" style="font-size: 0.72rem;">&bull; Picked Up</div>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/delivery/orders/{id}(id=${order.orderId})}" class="btn btn-primary-custom btn-sm">Process Dispatch &rarr;</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Fragment -->
+            <div th:replace="~{fragments/pagination :: pagination(${pageData}, ${baseUrl})}"></div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

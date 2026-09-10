@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Sales — Merchant Workspace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <span class="badge border text-uppercase px-3 py-1 rounded-pill mb-2" style="background-color: var(--accent-light); color: var(--primary);">Merchant Sales</span>
+                <h2 class="fw-bold mb-1">Customer Sales Ledger</h2>
+                <p class="text-muted small mb-0">Track customer purchases and real-time payment completion status for your products.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/merchant/dashboard}" class="btn btn-outline-custom btn-sm">Dashboard</a>
+                <a th:href="@{/merchant/products}" class="btn btn-outline-custom btn-sm">My Products</a>
+            </div>
+        </div>
+
+        <!-- Sales Table Card -->
+        <div class="surface-card p-0 overflow-hidden shadow-sm">
+            <div class="p-3 d-flex justify-content-between align-items-center border-bottom bg-light">
+                <h5 class="fw-bold mb-0">Product Sales History</h5>
+                <span class="badge bg-secondary rounded-pill" th:text="${pageData != null ? pageData.totalElements + ' Total Line Items' : (sales.size() + ' Total Line Items')}">0 Total</span>
+            </div>
+
+            <!-- Empty State -->
+            <div th:if="${#lists.isEmpty(sales)}" class="text-center py-5">
+                <div class="p-3 rounded-circle d-inline-flex mb-3" style="background-color: var(--accent-light); color: var(--primary);">
+                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm1.5 0a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-13zm13 3H1v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V5zM2 7.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5z"/>
+                    </svg>
+                </div>
+                <h5 class="fw-bold text-dark">No Product Sales Yet</h5>
+                <p class="text-muted small max-w-sm mx-auto mb-3">When customers purchase items from your product catalog, each sale line item and payment status will appear here.</p>
+                <a th:href="@{/merchant/products}" class="btn btn-primary-custom btn-sm">View My Products</a>
+            </div>
+
+            <!-- Sales Table -->
+            <div th:if="${not #lists.isEmpty(sales)}" class="table-responsive">
+                <table class="table table-custom mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Order ID</th>
+                            <th style="width: 22%;">Product</th>
+                            <th style="width: 6%;" class="text-center">Qty</th>
+                            <th style="width: 16%;">Customer</th>
+                            <th style="width: 12%;">Amount</th>
+                            <th style="width: 12%;">Payment</th>
+                            <th style="width: 12%;">Delivery Agent</th>
+                            <th style="width: 14%;">Status &amp; Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="sale : ${sales}">
+                            <td>
+                                <span class="fw-bold text-dark font-monospace" th:text="'#' + ${sale.orderId}">#1001</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img th:src="${sale.imageUrl}" th:alt="${sale.productName}" class="rounded border p-1" style="width: 40px; height: 40px; object-fit: contain; background: #FAF8F6;">
+                                    <div>
+                                        <span class="fw-bold text-dark small d-block" th:text="${sale.productName}">Product Name</span>
+                                        <span class="text-muted font-monospace small" th:text="'ID: ' + ${sale.productId}">ID: 1</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold" th:text="${sale.quantity}">1</td>
+                            <td>
+                                <span class="fw-semibold text-dark small d-block" th:text="${sale.customerName}">Customer Name</span>
+                                <span class="text-muted small" th:if="${sale.shippingAddress != null}" th:text="${sale.shippingAddress.city} + ', ' + ${sale.shippingAddress.state}">City, State</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark">₹<span th:text="${#numbers.formatDecimal(sale.subTotal, 1, 2)}">0.00</span></span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="small fw-semibold text-secondary" th:text="${sale.paymentMethod}">WALLET</span>
+                                    <span th:if="${sale.paymentStatus == 'PAID'}" class="badge bg-success text-uppercase" style="font-size: 0.72rem; width: fit-content;">PAID</span>
+                                    <span th:if="${sale.paymentStatus == 'PENDING'}" class="badge bg-warning text-dark text-uppercase" style="font-size: 0.72rem; width: fit-content;">PENDING</span>
+                                    <span th:if="${sale.paymentStatus != 'PAID' and sale.paymentStatus != 'PENDING'}" class="badge bg-secondary text-uppercase" style="font-size: 0.72rem; width: fit-content;" th:text="${sale.paymentStatus}">STATUS</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="small fw-semibold text-dark d-block" th:text="${sale.deliveryAgentName != null and sale.deliveryAgentName != '' ? sale.deliveryAgentName : 'Unassigned'}">Agent</span>
+                                <span class="text-muted" style="font-size: 0.72rem;" th:if="${sale.deliveryAgentId != null}" th:text="'Agent #' + ${sale.deliveryAgentId}">Agent #1</span>
+                            </td>
+                            <td>
+                                <span class="badge text-uppercase mb-1"
+                                      th:classappend="${sale.orderStatus == 'DELIVERED' ? 'bg-success' : (sale.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : (sale.orderStatus == 'ASSIGNED' ? 'bg-info text-dark' : 'bg-warning text-dark'))}"
+                                      style="font-size: 0.72rem;"
+                                      th:text="${sale.orderStatus}">PLACED</span>
+                                <span class="text-muted small d-block" th:text="${#temporals.format(sale.orderDate, 'dd MMM yyyy, HH:mm')}">Date</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Fragment -->
+            <div th:replace="~{fragments/pagination :: pagination(${pageData}, ${baseUrl})}"></div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

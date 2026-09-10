@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="swBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F1DDD2"/>
+      <stop offset="100%" stop-color="#E5DDD6"/>
+    </linearGradient>
+    <filter id="swShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#292522" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#swBg)"/>
+  <g filter="url(#swShadow)">
+    <!-- Top Strap -->
+    <path d="M 160 50 L 240 50 L 230 130 L 170 130 Z" fill="#4A5568"/>
+    <!-- Bottom Strap -->
+    <path d="M 170 270 L 230 270 L 240 350 L 160 350 Z" fill="#4A5568"/>
+    <!-- Watch Case -->
+    <rect x="140" y="125" width="120" height="150" rx="30" fill="#292522" stroke="#718096" stroke-width="2"/>
+    <!-- Screen -->
+    <rect x="150" y="135" width="100" height="130" rx="20" fill="#1A202C"/>
+    <!-- Digital Time Display -->
+    <text x="200" y="185" font-family="'Plus Jakarta Sans', sans-serif" font-size="28" font-weight="800" fill="#FFFDFC" text-anchor="middle">10:45</text>
+    <text x="200" y="205" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#C97852" text-anchor="middle">7,840 STEPS</text>
+    <!-- Heart Rate ring -->
+    <circle cx="200" cy="235" r="14" fill="none" stroke="#E53E3E" stroke-width="3"/>
+    <text x="200" y="239" font-family="'Plus Jakarta Sans', sans-serif" font-size="10" font-weight="700" fill="#FFFDFC" text-anchor="middle">72</text>
+    <!-- Crown Button -->
+    <rect x="260" y="170" width="8" height="24" rx="4" fill="#718096"/>
+  </g>
+  <rect x="30" y="30" width="75" height="24" rx="12" fill="#C97852"/>
+  <text x="67" y="46" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFDFC" text-anchor="middle">IP68 HD</text>
+</svg>

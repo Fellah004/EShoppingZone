@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Dashboard Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <span class="badge border text-uppercase px-3 py-1 rounded-pill mb-2" style="background-color: #fef2f2; color: #dc2626;">System Administration</span>
+                <h2 class="fw-bold mb-1">Admin Operations Center</h2>
+                <p class="text-muted small mb-0">Manage Delivery Agents, oversee order fulfillment, and route shipments.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/delivery-agents}" class="btn btn-outline-custom btn-sm">Delivery Agents</a>
+                <a th:href="@{/admin/assignments}" class="btn btn-primary-custom btn-sm">Assign Orders</a>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-4">
+            <!-- Active Delivery Agents -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-primary">
+                    <span class="text-muted small d-block">Delivery Agents</span>
+                    <h3 class="fw-bold text-dark my-1"><span th:text="${activeAgents}">0</span> <small class="fs-6 text-muted font-normal">/ <span th:text="${totalAgents}">0</span> active</small></h3>
+                    <a th:href="@{/admin/delivery-agents}" class="small text-decoration-none fw-semibold">Manage Agents &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Pending Orders -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-warning">
+                    <span class="text-muted small d-block">Unassigned / Placed Orders</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${pendingOrders}">0</h3>
+                    <a th:href="@{/admin/assignments}" class="small text-decoration-none fw-semibold text-warning">Assign Now &rarr;</a>
+                </div>
+            </div>
+
+            <!-- In-Transit Orders -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-info">
+                    <span class="text-muted small d-block">In Transit / Assigned</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${assignedOrders}">0</h3>
+                    <span class="text-muted small">Active deliveries</span>
+                </div>
+            </div>
+
+            <!-- Completed Deliveries -->
+            <div class="col">
+                <div class="surface-card p-3 shadow-sm h-100 border-start border-4 border-success">
+                    <span class="text-muted small d-block">Delivered Orders</span>
+                    <h3 class="fw-bold text-dark my-1" th:text="${deliveredOrders}">0</h3>
+                    <span class="text-muted small">Completed orders</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action & Recent Orders -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="surface-card p-0 overflow-hidden shadow-sm">
+                    <div class="p-3 d-flex justify-content-between align-items-center border-bottom bg-light">
+                        <h5 class="fw-bold mb-0">Recent Platform Orders</h5>
+                        <a th:href="@{/admin/assignments}" class="btn btn-sm btn-outline-secondary">View All Orders</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer ID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Agent</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="order : ${recentOrders}">
+                                    <td><span class="fw-bold font-monospace" th:text="'#' + ${order.orderId}">#1001</span></td>
+                                    <td><span class="text-muted small" th:text="'User #' + ${order.customerId}">User #1</span></td>
+                                    <td><span class="fw-bold">₹<span th:text="${#numbers.formatDecimal(order.orderAmount, 1, 2)}">0.00</span></span></td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${order.orderStatus == 'DELIVERED' ? 'bg-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : (order.orderStatus == 'ASSIGNED' ? 'bg-info text-dark' : 'bg-warning text-dark'))}"
+                                              th:text="${order.orderStatus}">PLACED</span>
+                                    </td>
+                                    <td>
+                                        <span class="small fw-semibold" th:text="${order.deliveryAgentName != null and order.deliveryAgentName != '' ? order.deliveryAgentName : 'Unassigned'}">Unassigned</span>
+                                    </td>
+                                    <td>
+                                        <a th:if="${order.orderStatus == 'PLACED' or order.orderStatus == 'CONFIRMED'}" th:href="@{/admin/assignments}" class="btn btn-sm btn-primary-custom py-0 px-2" style="font-size: 0.75rem;">Assign</a>
+                                        <a th:unless="${order.orderStatus == 'PLACED' or order.orderStatus == 'CONFIRMED'}" th:href="@{/admin/orders/{id}/track(id=${order.orderId})}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">Track</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Admin Shortcuts Card -->
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-3">Admin Operations Center</h5>
+                    <div class="d-grid gap-2">
+                        <a th:href="@{/admin/customers}" class="btn btn-outline-custom text-start py-2">
+                            <strong>111. Customer Accounts</strong>
+                            <small class="d-block text-muted">Search, block/unblock, and activate accounts</small>
+                        </a>
+                        <a th:href="@{/admin/merchants}" class="btn btn-outline-custom text-start py-2">
+                            <strong>116. Merchant Partners</strong>
+                            <small class="d-block text-muted">Approve store registrations and suspend sellers</small>
+                        </a>
+                        <a th:href="@{/admin/delivery-agents}" class="btn btn-outline-custom text-start py-2">
+                            <strong>121. Delivery Agents &amp; Zones</strong>
+                            <small class="d-block text-muted">Manage agents, approvals, and territory assignments</small>
+                        </a>
+                        <a th:href="@{/admin/products}" class="btn btn-outline-custom text-start py-2">
+                            <strong>128. Products &amp; Catalog</strong>
+                            <small class="d-block text-muted">Moderate listings, approve items, prohibit goods</small>
+                        </a>
+                        <a th:href="@{/admin/orders}" class="btn btn-outline-custom text-start py-2">
+                            <strong>133. Order Management</strong>
+                            <small class="d-block text-muted">Search orders, cancellations, and handle disputes</small>
+                        </a>
+                        <a th:href="@{/admin/deliveries}" class="btn btn-outline-custom text-start py-2">
+                            <strong>140. Logistics &amp; Deliveries</strong>
+                            <small class="d-block text-muted">Dispatch tracking and route assignments</small>
+                        </a>
+                        <a th:href="@{/admin/payments}" class="btn btn-outline-custom text-start py-2">
+                            <strong>146. Payments &amp; Financials</strong>
+                            <small class="d-block text-muted">Wallet transactions, COD volume, and refunds</small>
+                        </a>
+                        <a th:href="@{/admin/reports}" class="btn btn-outline-custom text-start py-2">
+                            <strong>152. Reports &amp; Analytics</strong>
+                            <small class="d-block text-muted">Executive metrics for sales, orders, and growth</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

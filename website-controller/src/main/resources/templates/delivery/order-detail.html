@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Dispatch #<span th:text="${order.orderId}">1</span> — EShoppingZone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <!-- Alerts Fragment -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <main class="container my-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a th:href="@{/delivery/dashboard}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/delivery/orders}" class="text-decoration-none">Assigned Deliveries</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dispatch #<span th:text="${order.orderId}">1</span></li>
+            </ol>
+        </nav>
+
+        <!-- Dispatch Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge border text-uppercase px-3 py-1 rounded-pill" style="background-color: #eff6ff; color: #2563eb;">Delivery Dispatch</span>
+                    <!-- Assignment State Pill -->
+                    <span th:if="${order.assignmentStatus == 'ACCEPTED'}" class="badge bg-success-subtle text-success border border-success-subtle">&check; Assignment Accepted</span>
+                    <span th:if="${order.assignmentStatus == 'ASSIGNED' or order.assignmentStatus == 'NONE'}" class="badge bg-warning-subtle text-warning border border-warning-subtle">&bull; Pending Acceptance</span>
+                    <span th:if="${order.pickupStatus == 'CONFIRMED'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">&bull; Picked Up from Store</span>
+                </div>
+                <h2 class="fw-bold mb-1">Dispatch Order #<span th:text="${order.orderId}">1</span></h2>
+                <p class="text-muted small mb-0">Assigned Delivery Specialist: <strong class="text-dark" th:text="${order.deliveryAgentName}">Agent Name</strong></p>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge px-3 py-2 fs-6 rounded-pill"
+                      th:classappend="${order.orderStatus == 'DELIVERED' ? 'bg-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'bg-primary' : (order.orderStatus == 'ASSIGNED' ? 'bg-info text-dark' : 'bg-warning text-dark'))}"
+                      th:text="${order.orderStatus}">STATUS</span>
+            </div>
+        </div>
+
+        <!-- 89. Assignment Acceptance Alert (if pending) -->
+        <div th:if="${order.orderStatus == 'ASSIGNED' and (order.assignmentStatus == 'ASSIGNED' or order.assignmentStatus == 'NONE')}" class="alert alert-warning shadow-sm border-0 p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h5 class="fw-bold mb-1">89. New Dispatch Assignment Received</h5>
+                    <p class="mb-0 small text-muted">Please accept or decline this delivery route assignment.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <form th:action="@{/delivery/orders/{id}/accept(id=${order.orderId})}" method="post">
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            &check; Accept Assignment
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        Decline
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Delivery Actions & Merchant / Customer Stops -->
+            <div class="col-lg-7">
+
+                <!-- MAIN WORKFLOW PROGRESSION BOX -->
+                <div class="surface-card p-4 shadow-sm mb-4 border-start border-4"
+                     th:classappend="${order.orderStatus == 'DELIVERED' ? 'border-success' : (order.orderStatus == 'OUT_FOR_DELIVERY' ? 'border-primary' : 'border-info')}">
+                    <h5 class="fw-bold mb-3">Delivery Dispatch Execution</h5>
+
+                    <!-- Step A: Assigned & Pickup Pending -->
+                    <div th:if="${order.orderStatus == 'ASSIGNED'}">
+                        <div th:if="${order.pickupStatus == 'PENDING' or order.pickupStatus == null}">
+                            <p class="text-muted small mb-3">Head to the merchant location to collect the package contents.</p>
+                            <form th:action="@{/delivery/orders/{id}/pickup(id=${order.orderId})}" method="post">
+                                <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-bold">
+                                    92. Arrived at Merchant &amp; Pick up Package &rarr;
+                                </button>
+                            </form>
+                        </div>
+                        <div th:if="${order.pickupStatus == 'PICKED_UP'}">
+                            <div class="alert alert-info border-0 p-3 mb-3">
+                                <strong>Package Picked Up from Store!</strong> Confirm departure to notify the customer and generate the delivery OTP.
+                            </div>
+                            <form th:action="@{/delivery/orders/{id}/confirm-pickup(id=${order.orderId})}" method="post">
+                                <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-bold">
+                                    93 &amp; 94. Confirm Pickup &amp; Start Transit (Out for Delivery) &rarr;
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Step B: In Transit (OUT_FOR_DELIVERY) -->
+                    <div th:if="${order.orderStatus == 'OUT_FOR_DELIVERY'}">
+                        <p class="text-muted small mb-3">You are in transit to customer doorstep. Collect payment (if COD) and verify customer OTP to complete delivery.</p>
+
+                        <!-- If COD and PENDING -->
+                        <div th:if="${order.paymentMethod == 'COD' and order.paymentStatus != 'PAID'}" class="alert alert-warning border-0 p-3 mb-3">
+                            <div class="fw-bold">Cash on Delivery Collection Pending</div>
+                            <small>Please collect ₹<span th:text="${#numbers.formatDecimal(order.orderAmount, 1, 2)}">0.00</span> in cash from the customer.</small>
+                            <form th:action="@{/delivery/orders/{id}/mark-cod-paid(id=${order.orderId})}" method="post" class="mt-2">
+                                <button type="submit" class="btn btn-success btn-sm">&check; Mark Cash Collected (PAID)</button>
+                            </form>
+                        </div>
+
+                        <!-- 102. Verify Delivery OTP Form -->
+                        <div class="p-3 bg-light rounded mb-3 border">
+                            <h6 class="fw-bold mb-2">102. Verify Customer Delivery OTP</h6>
+                            <p class="text-muted small mb-2">Ask the recipient for the 6-digit secure delivery OTP displayed on their order screen.</p>
+                            <form th:action="@{/delivery/orders/{id}/verify-otp(id=${order.orderId})}" method="post" class="d-flex gap-2">
+                                <input type="text" name="otp" class="form-control form-control-lg font-monospace fw-bold text-center" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required style="letter-spacing: 4px; max-width: 180px;">
+                                <button type="submit" class="btn btn-success fw-bold px-4">
+                                    Verify OTP &amp; Complete &check;
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Exception Actions: Failed, Reschedule, Return -->
+                        <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#failedModal">
+                                103. Delivery Failed
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#rescheduleModal">
+                                105. Reschedule Delivery
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#returnModal">
+                                106. Return to Merchant
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step C: DELIVERED -->
+                    <div th:if="${order.orderStatus == 'DELIVERED'}" class="text-success">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <h6 class="fw-bold mb-0">Delivery Completed Successfully!</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Delivered on: <span th:text="${order.deliveredDate != null ? #temporals.format(order.deliveredDate, 'dd MMM yyyy, HH:mm') : 'Recently'}">Date</span></p>
+                    </div>
+
+                    <!-- Step D: CANCELLED / RETURNED -->
+                    <div th:if="${order.orderStatus == 'CANCELLED'}" class="text-danger">
+                        <h6 class="fw-bold mb-1">Order Cancelled / Returned to Merchant</h6>
+                        <p class="text-muted small mb-0" th:text="${order.refundReason != null ? order.refundReason : 'Delivery stopped.'}">Cancelled</p>
+                    </div>
+                </div>
+
+                <!-- 90 & 91. MERCHANT PICKUP LOCATION & NAVIGATION -->
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">90. Merchant Pickup Origin</h5>
+                        <span class="badge bg-light text-dark border">Pickup Station</span>
+                    </div>
+
+                    <div th:if="${merchant != null}">
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Store / Business Name</span>
+                            <strong class="fs-6 text-dark" th:text="${merchant.businessName != null and !merchant.businessName.isEmpty() ? merchant.businessName : merchant.fullName}">Merchant Store</strong>
+                        </div>
+                        <div class="mb-2" th:if="${merchant.mobileNumber != null}">
+                            <span class="text-muted small d-block">Store Contact Number</span>
+                            <a th:href="'tel:' + ${merchant.mobileNumber}" class="text-decoration-none fw-bold" th:text="${merchant.mobileNumber}">9876543210</a>
+                        </div>
+                        <div class="mb-3" th:if="${merchant.address != null}">
+                            <span class="text-muted small d-block">Store Address</span>
+                            <p class="mb-0 text-dark small" th:text="${merchant.address.formattedAddress}">Store Address</p>
+                        </div>
+                        <!-- 91. Navigation Directions Link -->
+                        <div th:if="${merchant.address != null}">
+                            <a th:href="'https://www.google.com/maps/search/?api=1&query=' + ${#strings.replace(merchant.address.formattedAddress, ' ', '+')}"
+                               target="_blank"
+                               class="btn btn-outline-custom btn-sm fw-bold">
+                                91. Navigate to Merchant (Maps Directions) &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    <div th:unless="${merchant != null}">
+                        <p class="text-muted small mb-0">Central Merchant Dispatch Facility</p>
+                    </div>
+                </div>
+
+                <!-- 96 & 98. CUSTOMER DROP-OFF LOCATION & CONTACT -->
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Customer &amp; Drop-off Destination</h5>
+                        <span class="badge bg-light text-dark border">Delivery Stop</span>
+                    </div>
+
+                    <div th:if="${order.shippingAddress != null}">
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Recipient Name</span>
+                            <strong class="fs-6 text-dark" th:text="${order.shippingAddress.fullName != null ? order.shippingAddress.fullName : 'Customer'}">Recipient</strong>
+                        </div>
+                        <!-- 98. Contact Customer -->
+                        <div class="mb-2" th:if="${order.shippingAddress.mobileNumber != null}">
+                            <span class="text-muted small d-block">Recipient Phone (98. Contact Customer)</span>
+                            <a th:href="'tel:' + ${order.shippingAddress.mobileNumber}" class="btn btn-sm btn-outline-primary fw-bold mt-1">
+                                &phone; Call Customer (<span th:text="${order.shippingAddress.mobileNumber}">0000000000</span>)
+                            </a>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">Drop-off Address</span>
+                            <p class="mb-0 text-dark" th:text="${order.shippingAddress.formattedAddress}">Formatted Address</p>
+                        </div>
+                        <div>
+                            <a th:href="'https://www.google.com/maps/search/?api=1&query=' + ${#strings.replace(order.shippingAddress.formattedAddress, ' ', '+')}"
+                               target="_blank"
+                               class="btn btn-outline-custom btn-sm fw-bold">
+                                Navigate to Customer (Maps Directions) &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    <div th:unless="${order.shippingAddress != null}">
+                        <p class="text-muted small mb-0">Standard Delivery Address on File</p>
+                    </div>
+                </div>
+
+                <!-- 101. UPLOAD DELIVERY PROOF -->
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-2">101. Proof of Delivery</h5>
+                    <p class="text-muted small mb-3">Record delivery receipt, customer signature URL, or package drop photo.</p>
+
+                    <div th:if="${order.deliveryProofUrl != null and !order.deliveryProofUrl.isEmpty()}" class="mb-3">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle mb-2">&check; Delivery Proof on File</span>
+                        <div>
+                            <a th:href="${order.deliveryProofUrl}" target="_blank" class="btn btn-sm btn-outline-secondary">View Uploaded Proof &rarr;</a>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/delivery/orders/{id}/proof(id=${order.orderId})}" method="post" class="d-flex gap-2">
+                        <input type="url" name="proofUrl" class="form-control form-control-sm" placeholder="https://example.com/proof-photo.jpg" th:value="${order.deliveryProofUrl}" required>
+                        <button type="submit" class="btn btn-outline-custom btn-sm fw-bold text-nowrap">Save Proof</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Package Contents & Payment Summary -->
+            <div class="col-lg-5">
+                <div class="surface-card p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-3">Package Items (<span th:text="${#lists.size(order.items)}">0</span>)</h5>
+                    <div class="d-flex flex-column gap-3 mb-3">
+                        <div th:each="item : ${order.items}" class="d-flex align-items-center gap-3 p-2 bg-light rounded">
+                            <img th:src="${item.imageUrl != null and item.imageUrl != '' ? item.imageUrl : '/images/placeholder.png'}" alt="Product" class="rounded border" style="width: 44px; height: 44px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <span class="fw-semibold small d-block" th:text="${item.productName}">Product</span>
+                                <small class="text-muted">Qty: <span th:text="${item.quantity}">1</span> &bull; ₹<span th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</span></small>
+                            </div>
+                            <span class="fw-bold small">₹<span th:text="${#numbers.formatDecimal(item.subTotal, 1, 2)}">0.00</span></span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Payment Mode</span>
+                        <span class="fw-bold" th:text="${order.paymentMethod}">WALLET</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Payment Status</span>
+                        <span class="badge" th:classappend="${order.paymentStatus == 'PAID' ? 'bg-success' : 'bg-danger'}" th:text="${order.paymentStatus}">PAID</span>
+                    </div>
+                    <div class="d-flex justify-content-between fs-5 fw-bold mt-3 pt-2 border-top">
+                        <span>Total Package Value</span>
+                        <span style="color: var(--primary);">₹<span th:text="${#numbers.formatDecimal(order.orderAmount, 1, 2)}">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a th:href="@{/delivery/earnings}" class="btn btn-outline-custom">View Earnings &amp; Incentives</a>
+                    <a th:href="@{/delivery/orders}" class="btn btn-outline-secondary">Back to Assigned Deliveries</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Reject Assignment (Feature 89) -->
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/delivery/orders/{id}/reject(id=${order.orderId})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="rejectModalLabel">Decline Assignment</h5>
+                        <button type="button" class="btn-close" data-bs-target="#rejectModal" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small">Please provide a reason for declining this delivery dispatch so administrators can reassign it.</p>
+                        <div class="mb-3">
+                            <label for="rejectReason" class="form-label small fw-bold">Reason for Rejection *</label>
+                            <select class="form-select" id="rejectReason" name="reason" required>
+                                <option value="Vehicle issue / Breakdown">Vehicle issue / Breakdown</option>
+                                <option value="Route overload / High volume">Route overload / High volume</option>
+                                <option value="Out of operational zone">Out of operational zone</option>
+                                <option value="Emergency off-duty">Emergency off-duty</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger fw-bold">Confirm Decline</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: 103 & 104. Mark Delivery Failed -->
+    <div class="modal fade" id="failedModal" tabindex="-1" aria-labelledby="failedModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/delivery/orders/{id}/failed(id=${order.orderId})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="failedModalLabel">103 &amp; 104. Record Failed Delivery Attempt</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small">Select the reason why this delivery could not be completed.</p>
+                        <div class="mb-3">
+                            <label for="failedReason" class="form-label small fw-bold">Failure Reason *</label>
+                            <select class="form-select" id="failedReason" name="reason" required>
+                                <option value="Customer Unreachable / Phone Switched Off">Customer Unreachable / Phone Switched Off</option>
+                                <option value="Customer Unavailable / Door Locked">Customer Unavailable / Door Locked</option>
+                                <option value="Customer Refused Delivery">Customer Refused Delivery</option>
+                                <option value="Incorrect Delivery Address">Incorrect Delivery Address</option>
+                                <option value="Cash Not Ready (COD)">Cash Not Ready (COD)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger fw-bold">Record Failure</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: 105. Reschedule Delivery -->
+    <div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/delivery/orders/{id}/reschedule(id=${order.orderId})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="rescheduleModalLabel">105. Reschedule Delivery</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small">Set a new agreed delivery date for the customer.</p>
+                        <div class="mb-3">
+                            <label for="newDate" class="form-label small fw-bold">Rescheduled Date *</label>
+                            <input type="date" class="form-control" id="newDate" name="newDate" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary-custom fw-bold">Confirm Reschedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: 106. Return Package to Merchant -->
+    <div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/delivery/orders/{id}/return(id=${order.orderId})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="returnModalLabel">106. Return Package to Merchant</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small">Returning this package to the merchant will cancel the order and automatically refund paid customer wallet funds.</p>
+                        <div class="mb-3">
+                            <label for="returnReason" class="form-label small fw-bold">Return Reason *</label>
+                            <select class="form-select" id="returnReason" name="reason" required>
+                                <option value="Undeliverable after multiple attempts">Undeliverable after multiple attempts</option>
+                                <option value="Customer Rejected Package">Customer Rejected Package</option>
+                                <option value="Damaged in transit">Damaged in transit</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning fw-bold">Initiate Return &amp; Refund</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
